@@ -1,0 +1,301 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Bác sĩ - Hệ thống Khám ngoại trú & Smart Queue</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Font Awesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body { font-family: 'Inter', sans-serif; }
+    </style>
+</head>
+<body class="bg-slate-50 text-slate-800 min-h-screen">
+
+    <!-- Top Navigation Bar -->
+    <header class="bg-white border-b border-slate-200 sticky top-0 z-30 shadow-sm">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex justify-between h-16 items-center">
+                <!-- Logo & Brand -->
+                <div class="flex items-center space-x-3">
+                    <div class="w-10 h-10 rounded-xl bg-teal-600 flex items-center justify-center text-white shadow-md shadow-teal-100">
+                        <i class="fa-solid fa-hospital-user text-xl"></i>
+                    </div>
+                    <div>
+                        <h1 class="text-lg font-bold text-slate-800 leading-tight">MedQueue Pro</h1>
+                        <p class="text-xs text-teal-600 font-semibold" id="doctor-dept-room">Khoa Tai Mũi Họng • Phòng 204</p>
+                    </div>
+                </div>
+
+                <!-- Navigation switch between Doctor and Reception -->
+                <div class="hidden sm:flex items-center space-x-2">
+                    <a href="/" class="px-3 py-1.5 rounded-lg text-xs font-bold bg-teal-50 text-teal-800 border border-teal-200 flex items-center">
+                        <i class="fa-solid fa-stethoscope mr-1.5 text-teal-600"></i> Bác sĩ
+                    </a>
+                    <a href="/reception.html" class="px-3 py-1.5 rounded-lg text-xs font-semibold text-slate-600 hover:text-indigo-700 hover:bg-slate-100 transition flex items-center">
+                        <i class="fa-solid fa-id-card mr-1.5 text-indigo-600"></i> Sang Quầy Lễ tân
+                    </a>
+                </div>
+
+                <!-- Doctor Info & Status Toggle -->
+                <div class="flex items-center space-x-4">
+                    <!-- Status Toggle Button -->
+                    <button id="btn-toggle-status" onclick="toggleDoctorStatus()" class="flex items-center space-x-2 px-3 py-1.5 rounded-full border border-emerald-300 bg-emerald-50 text-emerald-700 text-xs font-semibold hover:bg-emerald-100 transition">
+                        <span class="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse" id="status-dot"></span>
+                        <span id="status-text">Sẵn sàng khám</span>
+                    </button>
+
+                    <!-- Realtime Clock -->
+                    <div class="hidden sm:flex items-center text-xs text-slate-500 bg-slate-100 px-3 py-1.5 rounded-lg">
+                        <i class="fa-regular fa-clock mr-1.5 text-slate-400"></i>
+                        <span id="realtime-clock">--:--:--</span>
+                    </div>
+
+                    <!-- Doctor Profile -->
+                    <div class="flex items-center space-x-3 pl-2 border-l border-slate-200">
+                        <img id="doctor-avatar" src="https://images.unsplash.com/photo-1622253692010-333f2da6031d?w=100&fit=crop&q=80" alt="Doctor" class="w-9 h-9 rounded-full object-cover ring-2 ring-teal-500">
+                        <div class="text-left hidden md:block">
+                            <p class="text-sm font-bold text-slate-800 leading-none" id="doctor-name">BS. CKII Lê Hoàng Minh</p>
+                            <span class="text-xs text-slate-400">Bác sĩ chuyên khoa</span>
+                        </div>
+                        <button onclick="logoutDoctor()" title="Đăng xuất" class="p-2 rounded-lg text-slate-400 hover:text-rose-600 hover:bg-rose-50 transition text-sm">
+                            <i class="fa-solid fa-arrow-right-from-bracket"></i>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Content Container -->
+    <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 space-y-6">
+
+        <!-- Quick Stats Overview -->
+        <section class="grid grid-cols-2 md:grid-cols-4 gap-4">
+            <!-- Stat 1: Total Today -->
+            <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-sm flex items-center justify-between">
+                <div>
+                    <p class="text-xs font-medium text-slate-500 uppercase tracking-wider">Tổng số hẹn</p>
+                    <p class="text-2xl font-bold text-slate-800 mt-1" id="stat-total">0</p>
+                </div>
+                <div class="w-10 h-10 rounded-lg bg-blue-50 text-blue-600 flex items-center justify-center text-lg">
+                    <i class="fa-solid fa-users"></i>
+                </div>
+            </div>
+
+            <!-- Stat 2: Waiting in Queue -->
+            <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-sm flex items-center justify-between">
+                <div>
+                    <p class="text-xs font-medium text-amber-600 uppercase tracking-wider">Đang chờ khám</p>
+                    <p class="text-2xl font-bold text-amber-600 mt-1" id="stat-waiting">0</p>
+                </div>
+                <div class="w-10 h-10 rounded-lg bg-amber-50 text-amber-600 flex items-center justify-center text-lg">
+                    <i class="fa-solid fa-clock-rotate-left"></i>
+                </div>
+            </div>
+
+            <!-- Stat 3: Completed -->
+            <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-sm flex items-center justify-between">
+                <div>
+                    <p class="text-xs font-medium text-emerald-600 uppercase tracking-wider">Đã khám xong</p>
+                    <p class="text-2xl font-bold text-emerald-600 mt-1" id="stat-completed">0</p>
+                </div>
+                <div class="w-10 h-10 rounded-lg bg-emerald-50 text-emerald-600 flex items-center justify-center text-lg">
+                    <i class="fa-solid fa-circle-check"></i>
+                </div>
+            </div>
+
+            <!-- Stat 4: Skipped -->
+            <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-sm flex items-center justify-between">
+                <div>
+                    <p class="text-xs font-medium text-rose-500 uppercase tracking-wider">Bỏ lượt / Vắng</p>
+                    <p class="text-2xl font-bold text-rose-500 mt-1" id="stat-skipped">0</p>
+                </div>
+                <div class="w-10 h-10 rounded-lg bg-rose-50 text-rose-500 flex items-center justify-center text-lg">
+                    <i class="fa-solid fa-user-xmark"></i>
+                </div>
+            </div>
+        </section>
+
+        <!-- Working Area: Left (Current Patient) & Right (Smart Queue) -->
+        <section class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+
+            <!-- LEFT COLUMN: CURRENT PATIENT & ACTIONS (8 Cols) -->
+            <div class="lg:col-span-8 space-y-6">
+
+                <!-- Current Active Patient Card -->
+                <div class="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
+                    <div class="bg-gradient-to-r from-teal-700 to-teal-800 px-6 py-4 text-white flex flex-wrap items-center justify-between gap-3">
+                        <div class="flex items-center space-x-2">
+                            <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-bold bg-teal-900 text-teal-200 border border-teal-500">
+                                <i class="fa-solid fa-stethoscope mr-1.5"></i> ĐANG KHÁM
+                            </span>
+                            <span class="text-sm text-teal-100" id="current-patient-checkin-time"></span>
+                        </div>
+                        <div class="flex items-center space-x-2">
+                            <span class="text-xs uppercase tracking-wider text-teal-200">Số thứ tự:</span>
+                            <span class="text-xl font-extrabold tracking-wider bg-white text-teal-800 px-3 py-0.5 rounded-lg shadow-sm" id="current-ticket-no">---</span>
+                        </div>
+                    </div>
+
+                    <div class="p-6" id="current-patient-body">
+                        <!-- Patient Basic Info Header -->
+                        <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center pb-5 border-b border-slate-100 gap-4">
+                            <div>
+                                <h2 class="text-2xl font-bold text-slate-800" id="current-patient-name">Chưa có bệnh nhân nào trong phòng</h2>
+                                <p class="text-sm text-slate-500 mt-1" id="current-patient-meta">Bấm "Gọi bệnh nhân kế tiếp" để bắt đầu lượt khám.</p>
+                            </div>
+                            <div class="flex items-center space-x-2" id="current-actions-container">
+                                <button onclick="skipCurrentPatient()" class="px-4 py-2 rounded-xl border border-rose-200 text-rose-600 bg-rose-50 hover:bg-rose-100 text-sm font-semibold transition flex items-center">
+                                    <i class="fa-solid fa-forward-step mr-1.5"></i> Bỏ lượt
+                                </button>
+                                <button onclick="openExamModal()" class="px-4 py-2 rounded-xl bg-teal-600 hover:bg-teal-700 text-white text-sm font-semibold shadow-md shadow-teal-200 transition flex items-center">
+                                    <i class="fa-solid fa-notes-medical mr-1.5"></i> Nhập kết quả khám
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- Patient Symptoms / Reason for visit -->
+                        <div class="mt-5 p-4 rounded-xl bg-slate-50 border border-slate-200">
+                            <p class="text-xs font-semibold text-slate-400 uppercase tracking-wider">Lý do đến khám & Triệu chứng ban đầu</p>
+                            <p class="text-slate-700 text-sm mt-1.5 leading-relaxed font-medium" id="current-patient-reason">
+                                Chưa có dữ liệu triệu chứng.
+                            </p>
+                        </div>
+
+                        <!-- Medical Tabs: History & OCR Documents -->
+                        <div class="mt-6">
+                            <div class="flex border-b border-slate-200 space-x-6">
+                                <button class="pb-3 text-sm font-bold text-teal-700 border-b-2 border-teal-600 flex items-center" id="tab-btn-history">
+                                    <i class="fa-solid fa-file-waveform mr-2"></i> Lịch sử khám cũ
+                                </button>
+                                <button class="pb-3 text-sm font-medium text-slate-500 hover:text-slate-800 flex items-center" id="tab-btn-ocr">
+                                    <i class="fa-solid fa-file-lines mr-2"></i> Tài liệu đã OCR (Đơn thuốc/Xét nghiệm)
+                                </button>
+                            </div>
+
+                            <!-- Tab 1: History Content -->
+                            <div id="tab-content-history" class="pt-4 space-y-3">
+                                <div id="history-list" class="space-y-2">
+                                    <!-- Rendered dynamically -->
+                                </div>
+                            </div>
+
+                            <!-- Tab 2: OCR Content (Hidden by default) -->
+                            <div id="tab-content-ocr" class="pt-4 hidden space-y-3">
+                                <div id="ocr-list" class="space-y-3">
+                                    <!-- Rendered dynamically -->
+                                </div>
+                            </div>
+                        </div>
+
+                    </div>
+                </div>
+
+                <!-- Call Next CTA Big Banner -->
+                <div class="bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-200 rounded-2xl p-5 flex flex-col sm:flex-row items-center justify-between gap-4">
+                    <div class="flex items-center space-x-4">
+                        <div class="w-12 h-12 rounded-xl bg-blue-600 text-white flex items-center justify-center text-xl shadow-md shadow-blue-200">
+                            <i class="fa-solid fa-bullhorn animate-bounce"></i>
+                        </div>
+                        <div>
+                            <h3 class="text-base font-bold text-slate-800">Điều phối Smart Queue</h3>
+                            <p class="text-xs text-slate-500 mt-0.5">Gọi số tiếp theo vào phòng khám. Hệ thống sẽ tự động cập nhật bảng điện tử và thông báo.</p>
+                        </div>
+                    </div>
+                    <button onclick="callNextPatient()" class="w-full sm:w-auto px-6 py-3 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-bold text-sm shadow-md shadow-blue-300 transition flex items-center justify-center space-x-2">
+                        <i class="fa-solid fa-volume-high"></i>
+                        <span>GỌI BỆNH NHÂN TIẾP THEO</span>
+                    </button>
+                </div>
+
+            </div>
+
+            <!-- RIGHT COLUMN: SMART QUEUE WAITING LIST (4 Cols) -->
+            <div class="lg:col-span-4 space-y-6">
+
+                <!-- Queue List Card -->
+                <div class="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden flex flex-col h-full">
+                    <div class="p-4 border-b border-slate-100 flex items-center justify-between bg-slate-50">
+                        <div class="flex items-center space-x-2">
+                            <span class="w-2.5 h-2.5 rounded-full bg-amber-500"></span>
+                            <h3 class="font-bold text-sm text-slate-800">Hàng đợi chờ khám</h3>
+                        </div>
+                        <span class="text-xs font-semibold px-2 py-0.5 rounded-full bg-amber-100 text-amber-800" id="badge-queue-count">0 người</span>
+                    </div>
+
+                    <!-- Queue Items Container -->
+                    <div class="p-3 divide-y divide-slate-100 overflow-y-auto max-h-[500px]" id="waiting-queue-container">
+                        <!-- Dynamic items will load here -->
+                    </div>
+
+                    <!-- Footer of Queue -->
+                    <div class="p-3 bg-slate-50 border-t border-slate-100 text-center">
+                        <p class="text-xs text-slate-400">
+                            <i class="fa-solid fa-bolt mr-1 text-amber-500"></i>
+                            Thời gian khám TB: <strong>~12 phút / ca</strong>
+                        </p>
+                    </div>
+                </div>
+
+            </div>
+
+        </section>
+
+    </main>
+
+    <!-- MODAL: NHẬP KẾT QUẢ KHÁM (CONSULTATION RESULT) -->
+    <div id="exam-modal" class="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-50 flex items-center justify-center hidden p-4">
+        <div class="bg-white rounded-2xl shadow-xl border border-slate-200 max-w-lg w-full overflow-hidden">
+            <div class="bg-teal-700 px-6 py-4 text-white flex justify-between items-center">
+                <div class="flex items-center space-x-2">
+                    <i class="fa-solid fa-file-signature text-lg"></i>
+                    <h3 class="font-bold text-base">Nhập kết quả khám bệnh</h3>
+                </div>
+                <button onclick="closeExamModal()" class="text-teal-200 hover:text-white text-lg">
+                    <i class="fa-solid fa-xmark"></i>
+                </button>
+            </div>
+
+            <form id="exam-form" onsubmit="submitExamResult(event)" class="p-6 space-y-4">
+                <div>
+                    <label class="block text-xs font-bold text-slate-700 uppercase mb-1">Chẩn đoán y khoa *</label>
+                    <input type="text" id="modal-diagnosis" required placeholder="VD: Viêm amidan cấp, Viêm họng hạt..." class="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 text-sm focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent">
+                </div>
+
+                <div>
+                    <label class="block text-xs font-bold text-slate-700 uppercase mb-1">Phương pháp / Phác đồ điều trị</label>
+                    <textarea id="modal-treatment" rows="3" placeholder="Ghi chú hướng điều trị, thuốc dự kiến hoặc chỉ định cận lâm sàng..." class="w-full px-3.5 py-2 rounded-xl border border-slate-300 text-sm focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent"></textarea>
+                </div>
+
+                <div>
+                    <label class="block text-xs font-bold text-slate-700 uppercase mb-1">Lời dặn bác sĩ</label>
+                    <input type="text" id="modal-notes" placeholder="VD: Uống nhiều nước ấm, tái khám sau 5 ngày..." class="w-full px-3.5 py-2 rounded-xl border border-slate-300 text-sm focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent">
+                </div>
+
+                <div class="pt-3 flex justify-end space-x-3 border-t border-slate-100">
+                    <button type="button" onclick="closeExamModal()" class="px-4 py-2 rounded-xl border border-slate-300 text-slate-700 text-sm font-semibold hover:bg-slate-50 transition">
+                        Hủy
+                    </button>
+                    <button type="submit" class="px-5 py-2 rounded-xl bg-teal-600 hover:bg-teal-700 text-white text-sm font-bold shadow-md shadow-teal-200 transition">
+                        <i class="fa-solid fa-check mr-1.5"></i> Hoàn tất ca khám
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Notification Toast -->
+    <div id="toast" class="fixed bottom-5 right-5 z-50 bg-slate-900 text-white px-5 py-3 rounded-xl shadow-lg transform translate-y-20 opacity-0 transition-all duration-300 flex items-center space-x-3 text-sm">
+        <i class="fa-solid fa-circle-info text-teal-400" id="toast-icon"></i>
+        <span id="toast-message">Thông báo hệ thống</span>
+    </div>
+
+    <!-- Application Script -->
+    <script src="app.js"></script>
+</body>
+</html>

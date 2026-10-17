@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Lễ tân - Chưa cập nhật tính năng</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Font Awesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        body { font-family: 'Inter', sans-serif; }
+    </style>
+</head>
+<body class="bg-slate-100 text-slate-800 min-h-screen flex flex-col">
+
+    <!-- Top Navigation Bar -->
+    <header class="bg-white border-b border-slate-200 sticky top-0 z-30 shadow-sm">
+        <div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex justify-between h-16 items-center">
+                <!-- Logo -->
+                <div class="flex items-center space-x-3">
+                    <div class="w-10 h-10 rounded-xl bg-indigo-600 flex items-center justify-center text-white shadow-md shadow-indigo-100">
+                        <i class="fa-solid fa-id-card text-xl"></i>
+                    </div>
+                    <div>
+                        <h1 class="text-lg font-bold text-slate-800 leading-tight">MedQueue Pro</h1>
+                        <p class="text-xs text-indigo-600 font-semibold">Phân hệ Quầy Lễ tân</p>
+                    </div>
+                </div>
+
+                <!-- User & Logout -->
+                <div class="flex items-center space-x-4">
+                    <div class="flex items-center space-x-2 text-xs text-slate-600">
+                        <span class="w-2.5 h-2.5 rounded-full bg-indigo-500"></span>
+                        <span id="user-display-name">Lễ tân Hoàng Yến</span>
+                        <span class="px-2 py-0.5 rounded bg-indigo-50 text-indigo-700 font-bold border border-indigo-200">TIEPTAN</span>
+                    </div>
+                    <button onclick="handleLogout()" class="px-3.5 py-1.5 rounded-lg border border-slate-300 text-slate-700 hover:bg-rose-50 hover:text-rose-600 hover:border-rose-200 text-xs font-semibold transition flex items-center">
+                        <i class="fa-solid fa-arrow-right-from-bracket mr-1.5"></i> Đăng xuất
+                    </button>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Notice Card -->
+    <main class="flex-1 max-w-2xl mx-auto px-4 py-16 flex items-center justify-center">
+        <div class="bg-white rounded-3xl border border-slate-200 shadow-xl p-8 sm:p-12 text-center space-y-6 w-full">
+            
+            <!-- Icon Minh họa -->
+            <div class="w-24 h-24 rounded-3xl bg-amber-50 text-amber-500 border border-amber-200 flex items-center justify-center text-4xl mx-auto shadow-inner">
+                <i class="fa-solid fa-person-digging"></i>
+            </div>
+
+            <!-- Tiêu đề & Thông báo chính -->
+            <div class="space-y-2">
+                <span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-bold bg-amber-100 text-amber-800 border border-amber-300">
+                    <i class="fa-solid fa-clock mr-1.5"></i> ĐANG TRONG QUÁ TRÌNH PHÁT TRIỂN
+                </span>
+                <h2 class="text-2xl sm:text-3xl font-extrabold text-slate-800">
+                    Chưa cập nhật tính năng
+                </h2>
+                <p class="text-sm text-slate-500 max-w-md mx-auto leading-relaxed">
+                    Phân hệ làm việc dành cho nhân viên <strong>Lễ tân & Điều phối</strong> đang được xây dựng theo lộ trình đồ án. Vui lòng quay lại sau!
+                </p>
+            </div>
+
+            <!-- Các nút hành động -->
+            <div class="pt-4 border-t border-slate-100 flex flex-col sm:flex-row items-center justify-center gap-3">
+                <button onclick="handleLogout()" class="w-full sm:w-auto px-6 py-3 rounded-xl bg-slate-800 hover:bg-slate-900 text-white font-bold text-xs shadow-md transition flex items-center justify-center space-x-2">
+                    <i class="fa-solid fa-arrow-left"></i>
+                    <span>Đăng xuất về trang Đăng nhập</span>
+                </button>
+                <a href="/reception.html" class="w-full sm:w-auto px-5 py-3 rounded-xl border border-indigo-200 bg-indigo-50 text-indigo-700 hover:bg-indigo-100 font-bold text-xs transition flex items-center justify-center space-x-2">
+                    <i class="fa-solid fa-eye"></i>
+                    <span>Xem bản Demo Kiosk Check-in</span>
+                </a>
+            </div>
+
+        </div>
+    </main>
+
+    <footer class="py-4 text-center text-xs text-slate-400 border-t border-slate-200 bg-white">
+        Hệ thống Quản lý Bệnh viện & Đặt lịch khám thông minh • Nhóm 12
+    </footer>
+
+    <script>
+        // Hiển thị tên người dùng đã lưu
+        document.addEventListener('DOMContentLoaded', () => {
+            const userStr = localStorage.getItem('hospitalUser');
+            if (userStr) {
+                try {
+                    const user = JSON.parse(userStr);
+                    if (user && user.name) {
+                        document.getElementById('user-display-name').textContent = user.name;
+                    }
+                } catch(e) {}
+            }
+        });
+
+        function handleLogout() {
+            localStorage.removeItem('hospitalUser');
+            window.location.href = '/login.html';
+        }
+    </script>
+</body>
+</html>
