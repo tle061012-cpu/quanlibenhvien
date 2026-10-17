@@ -1,9 +1,33 @@
+<!--
+ * =====================================================================================
+ * HỆ THỐNG QUẢN LÝ BỆNH VIỆN VÀ ĐẶT LỊCH KHÁM THÔNG MINH - ĐỒ ÁN CHUYÊN NGÀNH (NHÓM 12)
+ * =====================================================================================
+ * 
+ * 📁 TÊN FILE: public/index/login.html
+ * 🎯 MỤC ĐÍCH: Cổng Đăng nhập tập trung (Authentication Gateway) của toàn hệ thống.
+ * 👥 VAI TRÒ HỖ TRỢ (ROLES):
+ *    - Bác sĩ (`BACSI`)        -> Chuyển hướng vào phân hệ Bác sĩ (/doctor).
+ *    - Lễ tân (`TIEPTAN`)      -> Chuyển hướng vào trang Lễ tân (/reception-notice).
+ *    - Bệnh nhân (`BENHNHAN`)  -> Thông báo đăng nhập trên Mobile App.
+ * 
+ * 🔄 LUỒNG HOẠT ĐỘNG (WORKFLOW):
+ *    1. Người dùng nhập ID hoặc SĐT và Mật khẩu.
+ *    2. Bấm "ĐĂNG NHẬP" -> Gửi request POST tới API `/api/auth/login`.
+ *    3. Backend đối chiếu dữ liệu với bảng `nguoidung` trong cơ sở dữ liệu MySQL.
+ *    4. Nhận kết quả:
+ *       - Nếu sai mật khẩu / tài khoản: Hiển thị Toast thông báo lỗi màu đỏ.
+ *       - Nếu đúng: Lưu thông tin người dùng vào `localStorage` và tự động điều hướng:
+ *           + Nếu role == 'BACSI'   => Đến trang Bác sĩ (/doctor).
+ *           + Nếu role == 'TIEPTAN' => Đến trang Lễ tân (/reception-notice).
+ * =====================================================================================
+-->
+
 <!DOCTYPE html>
 <html lang="vi">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Đăng nhập - Hệ thống Quản lý Bệnh viện</title>
+    <title>Đăng nhập - Hệ thống Quản lý Bệnh viện MedQueue Pro</title>
     <!-- Tailwind CSS CDN -->
     <script src="https://cdn.tailwindcss.com"></script>
     <!-- Font Awesome Icons -->
@@ -18,7 +42,7 @@
 
     <div class="max-w-md w-full bg-white rounded-3xl shadow-xl border border-slate-200/80 overflow-hidden">
         
-        <!-- Header Banner -->
+        <!-- Header Banner Thương hiệu -->
         <div class="bg-gradient-to-r from-teal-700 via-teal-800 to-slate-900 p-8 text-white text-center relative overflow-hidden">
             <div class="absolute -right-10 -bottom-10 w-40 h-40 bg-white/5 rounded-full blur-2xl"></div>
             
@@ -33,6 +57,7 @@
         <div class="p-8 space-y-6">
 
             <form onsubmit="handleLogin(event)" class="space-y-4">
+                <!-- Trường 1: Tài khoản ID hoặc SĐT -->
                 <div>
                     <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">
                         Tài khoản (ID hoặc SĐT) *
@@ -44,6 +69,7 @@
                     </div>
                 </div>
 
+                <!-- Trường 2: Mật khẩu -->
                 <div>
                     <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">
                         Mật khẩu *
@@ -58,31 +84,71 @@
                     </div>
                 </div>
 
+                <!-- Nút Submit Đăng nhập -->
                 <button type="submit" id="btn-submit" class="w-full py-3.5 rounded-xl bg-teal-600 hover:bg-teal-700 text-white font-bold text-sm shadow-md shadow-teal-200 transition flex items-center justify-center space-x-2">
                     <i class="fa-solid fa-right-to-bracket"></i>
                     <span>ĐĂNG NHẬP VÀO HỆ THỐNG</span>
                 </button>
             </form>
 
-            <!-- Chọn nhanh tài khoản Demo để test phân quyền -->
-            
+            <!-- Khối chọn nhanh tài khoản Demo để test phân quyền -->
+            <div class="pt-4 border-t border-slate-100">
+                <p class="text-xs font-bold text-slate-400 uppercase tracking-wider mb-2.5 text-center">
+                    Tài khoản mẫu thử nghiệm (Click để điền)
+                </p>
+                <div class="grid grid-cols-2 gap-2">
+                    <!-- Nút Bác sĩ mẫu -->
+                    <button type="button" onclick="fillAccount('1', '123456')" 
+                            class="p-2.5 rounded-xl border border-teal-200 bg-teal-50/60 hover:bg-teal-100/80 transition text-left group">
+                        <div class="flex items-center space-x-2">
+                            <div class="w-7 h-7 rounded-lg bg-teal-600 text-white flex items-center justify-center text-xs">
+                                <i class="fa-solid fa-user-doctor"></i>
+                            </div>
+                            <div>
+                                <p class="text-xs font-bold text-teal-800 leading-none">Bác sĩ</p>
+                                <span class="text-[10px] text-teal-600">ID: 1 • Pass: 123456</span>
+                            </div>
+                        </div>
+                    </button>
+
+                    <!-- Nút Lễ tân mẫu -->
+                    <button type="button" onclick="fillAccount('4', '123456')" 
+                            class="p-2.5 rounded-xl border border-indigo-200 bg-indigo-50/60 hover:bg-indigo-100/80 transition text-left group">
+                        <div class="flex items-center space-x-2">
+                            <div class="w-7 h-7 rounded-lg bg-indigo-600 text-white flex items-center justify-center text-xs">
+                                <i class="fa-solid fa-id-card"></i>
+                            </div>
+                            <div>
+                                <p class="text-xs font-bold text-indigo-800 leading-none">Lễ tân</p>
+                                <span class="text-[10px] text-indigo-600">ID: 4 • Pass: 123456</span>
+                            </div>
+                        </div>
+                    </button>
+                </div>
+            </div>
 
         </div>
 
     </div>
 
-    <!-- Toast Notification -->
+    <!-- Toast thông báo kết quả -->
     <div id="toast" class="fixed bottom-5 right-5 z-50 bg-slate-900 text-white px-5 py-3 rounded-xl shadow-lg transform translate-y-20 opacity-0 transition-all duration-300 flex items-center space-x-3 text-sm">
         <i class="fa-solid fa-circle-info text-teal-400" id="toast-icon"></i>
         <span id="toast-message">Thông báo</span>
     </div>
 
     <script>
+        /**
+         * Hàm hỗ trợ điền nhanh tài khoản mẫu vào ô nhập liệu
+         */
         function fillAccount(id, pass) {
             document.getElementById('login-identifier').value = id;
             document.getElementById('login-password').value = pass;
         }
 
+        /**
+         * Hàm chuyển đổi ẩn/hiện mật khẩu
+         */
         function togglePasswordVisibility() {
             const pwdInput = document.getElementById('login-password');
             const icon = document.getElementById('pwd-icon');
@@ -95,6 +161,9 @@
             }
         }
 
+        /**
+         * Xử lý gửi API đăng nhập và điều hướng theo vai trò (Role Routing)
+         */
         async function handleLogin(e) {
             e.preventDefault();
             const identifier = document.getElementById('login-identifier').value.trim();
@@ -123,14 +192,14 @@
                 showToast(`Xin chào ${data.user.name}! Đang chuyển hướng...`);
                 localStorage.setItem('hospitalUser', JSON.stringify(data.user));
 
-                // Phân quyền chuyển hướng
+                // Phân quyền điều hướng theo Role đã cấu hình
                 setTimeout(() => {
                     if (data.user.role === 'BACSI') {
                         // Nếu là Bác sĩ -> chuyển sang Trang Bác sĩ
-                        window.location.href = '/';
+                        window.location.href = '/doctor';
                     } else if (data.user.role === 'TIEPTAN') {
                         // Nếu là Lễ tân -> chuyển sang trang hiển thị "Chưa cập nhật tính năng"
-                        window.location.href = '/reception-notice.html';
+                        window.location.href = '/reception-notice';
                     } else {
                         // Các vai trò khác
                         showToast(`Vai trò ${data.user.role} hiện chưa cập nhật tính năng!`, true);
@@ -146,6 +215,9 @@
             }
         }
 
+        /**
+         * Hiển thị popup toast thông báo ở góc màn hình
+         */
         function showToast(message, isError = false) {
             const toast = document.getElementById('toast');
             const msgEl = document.getElementById('toast-message');

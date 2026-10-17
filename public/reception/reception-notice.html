@@ -1,19 +1,21 @@
-
-<!-- ê cái này chỉ là cái mà nếu chưa có trang của lễ tân real á chính thức  á thì 
-  file này chỉ thông báo là chưa có thôi , chỉ đến trang demo-->
-
-
-
-
-
-
-
-
-
-
-
-
-
+<!--
+ * =====================================================================================
+ * HỆ THỐNG QUẢN LÝ BỆNH VIỆN VÀ ĐẶT LỊCH KHÁM THÔNG MINH - ĐỒ ÁN CHUYÊN NGÀNH (NHÓM 12)
+ * =====================================================================================
+ * 
+ * 📁 TÊN FILE: public/reception/reception-notice.html
+ * 🎯 MỤC ĐÍCH: Màn hình thông báo trạng thái cho vai trò Lễ tân theo yêu cầu đồ án.
+ * 👥 VAI TRÒ HỖ TRỢ (ROLE): LỄ TÂN (Receptionist)
+ * 
+ * 🔄 LUỒNG HOẠT ĐỘNG (WORKFLOW):
+ *    1. Người dùng đăng nhập với tài khoản Lễ tân (`TIEPTAN`) tại /login.
+ *    2. Hệ thống phân quyền tự động điều hướng sang trang này.
+ *    3. Trang hiển thị thông báo "Chưa cập nhật tính năng" kèm thông tin nhân viên đăng nhập.
+ *    4. Cung cấp nút:
+ *       - "Đăng xuất": Xóa phiên đăng nhập và quay về trang Login (/login).
+ *       - "Xem bản Demo Kiosk Check-in": Mở trang Quầy tiếp đón & Quét QR (/reception).
+ * =====================================================================================
+-->
 
 <!DOCTYPE html>
 <html lang="vi">
@@ -48,7 +50,7 @@
                     </div>
                 </div>
 
-                <!-- User & Logout -->
+                <!-- User Profile & Logout -->
                 <div class="flex items-center space-x-4">
                     <div class="flex items-center space-x-2 text-xs text-slate-600">
                         <span class="w-2.5 h-2.5 rounded-full bg-indigo-500"></span>
@@ -63,16 +65,16 @@
         </div>
     </header>
 
-    <!-- Main Notice Card -->
+    <!-- Khung thông báo chính -->
     <main class="flex-1 max-w-2xl mx-auto px-4 py-16 flex items-center justify-center">
         <div class="bg-white rounded-3xl border border-slate-200 shadow-xl p-8 sm:p-12 text-center space-y-6 w-full">
             
-            <!-- Icon Minh họa -->
+            <!-- Icon Minh họa đang bảo trì / phát triển -->
             <div class="w-24 h-24 rounded-3xl bg-amber-50 text-amber-500 border border-amber-200 flex items-center justify-center text-4xl mx-auto shadow-inner">
                 <i class="fa-solid fa-person-digging"></i>
             </div>
 
-            <!-- Tiêu đề & Thông báo chính -->
+            <!-- Tiêu đề & Nội dung -->
             <div class="space-y-2">
                 <span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-bold bg-amber-100 text-amber-800 border border-amber-300">
                     <i class="fa-solid fa-clock mr-1.5"></i> ĐANG TRONG QUÁ TRÌNH PHÁT TRIỂN
@@ -85,13 +87,13 @@
                 </p>
             </div>
 
-            <!-- Các nút hành động -->
+            <!-- Các nút điều hướng -->
             <div class="pt-4 border-t border-slate-100 flex flex-col sm:flex-row items-center justify-center gap-3">
                 <button onclick="handleLogout()" class="w-full sm:w-auto px-6 py-3 rounded-xl bg-slate-800 hover:bg-slate-900 text-white font-bold text-xs shadow-md transition flex items-center justify-center space-x-2">
                     <i class="fa-solid fa-arrow-left"></i>
                     <span>Đăng xuất về trang Đăng nhập</span>
                 </button>
-                <a href="/reception.html" class="w-full sm:w-auto px-5 py-3 rounded-xl border border-indigo-200 bg-indigo-50 text-indigo-700 hover:bg-indigo-100 font-bold text-xs transition flex items-center justify-center space-x-2">
+                <a href="/reception" class="w-full sm:w-auto px-5 py-3 rounded-xl border border-indigo-200 bg-indigo-50 text-indigo-700 hover:bg-indigo-100 font-bold text-xs transition flex items-center justify-center space-x-2">
                     <i class="fa-solid fa-eye"></i>
                     <span>Xem bản Demo Kiosk Check-in</span>
                 </a>
@@ -105,7 +107,7 @@
     </footer>
 
     <script>
-        // Hiển thị tên người dùng đã lưu
+        // Hiển thị tên người dùng đã lưu trong localStorage
         document.addEventListener('DOMContentLoaded', () => {
             const userStr = localStorage.getItem('hospitalUser');
             if (userStr) {
@@ -118,9 +120,10 @@
             }
         });
 
+        // Xử lý đăng xuất
         function handleLogout() {
             localStorage.removeItem('hospitalUser');
-            window.location.href = '/login.html';
+            window.location.href = '/login';
         }
     </script>
 </body>

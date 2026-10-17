@@ -1,18 +1,40 @@
+/**
+ * =====================================================================================
+ * HỆ THỐNG QUẢN LÝ BỆNH VIỆN VÀ ĐẶT LỊCH KHÁM THÔNG MINH - ĐỒ ÁN CHUYÊN NGÀNH (NHÓM 12)
+ * =====================================================================================
+ * 
+ * 📁 TÊN FILE: public/reception/reception.js
+ * 🎯 MỤC ĐÍCH: Xử lý logic nghiệp vụ Quầy Tiếp tân và Kiosk Quét mã QR Check-in tự động.
+ * 👥 VAI TRÒ HỖ TRỢ (ROLE): LỄ TÂN (Receptionist) / KIOSK CHECK-IN
+ * 
+ * 🔄 CÁC HOẠT ĐỘNG CHÍNH (KEY OPERATIONS):
+ *    1. `loadReceptionData()`      : Đồng bộ danh sách lịch hẹn và tình trạng các phòng khám mỗi 4 giây.
+ *    2. `doCheckinApi()`           : QUÉT MÃ QR CHECK-IN -> Đổi trạng thái lịch hẹn, cấp STT, đẩy vào Smart Queue.
+ *    3. `handleWalkInSubmit()`     : Tiếp nhận bệnh nhân vãng lai không đặt hẹn -> Cấp số khám trực tiếp tại quầy.
+ *    4. `renderClinicsMonitor()`   : Hiển thị thời gian thực bác sĩ nào đang khám ai, còn bao nhiêu người chờ.
+ *    5. `showTicketModal()`        : Hiển thị Popup Phiếu chờ khám bệnh điện tử có hỗ trợ in (Print).
+ * =====================================================================================
+ */
+
+// Biến lưu cache danh sách lịch hẹn để lọc tìm kiếm nhanh trên client
 let appointmentsCache = [];
 
+// Khởi tạo khi DOM đã nạp hoàn tất
 document.addEventListener('DOMContentLoaded', () => {
     loadReceptionData();
 
-    // Tự động làm mới mỗi 4 giây
+    // Tự động làm mới dữ liệu sau mỗi 4 giây
     setInterval(() => {
         loadReceptionData(false);
     }, 4000);
 });
 
-// 1. Tải dữ liệu quầy tiếp tân
+/**
+ * 👩‍💼 1. TẢI DỮ LIỆU TỔNG QUAN QUẦY TIẾP TÂN TỪ SERVER MYSQL
+ */
 async function loadReceptionData(showToastMsg = false) {
     try {
-        // Tải tổng quan sảnh & phòng khám
+        // Tải tổng quan sảnh & trạng thái các phòng khám
         const resOverview = await fetch('/api/reception/overview');
         const overview = await resOverview.json();
 
@@ -22,7 +44,7 @@ async function loadReceptionData(showToastMsg = false) {
 
         renderClinicsMonitor(overview.clinics);
 
-        // Tải danh sách lịch hẹn
+        // Tải danh sách lịch hẹn hôm nay
         const resApt = await fetch('/api/reception/appointments');
         appointmentsCache = await resApt.json();
         renderAppointmentsTable(appointmentsCache);
@@ -33,7 +55,9 @@ async function loadReceptionData(showToastMsg = false) {
     }
 }
 
-// 2. Hiển thị Bảng lịch hẹn đặt trước
+/**
+ * 📋 2. HIỂN THỊ BẢNG DANH SÁCH LỊCH HẸN ĐẶT TRƯỚC
+ */
 function renderAppointmentsTable(list) {
     const tbody = document.getElementById('appointment-table-body');
     if (!list || list.length === 0) {
@@ -83,7 +107,9 @@ function renderAppointmentsTable(list) {
     }).join('');
 }
 
-// Lọc lịch hẹn theo ô tìm kiếm
+/**
+ * 🔍 Lọc danh sách lịch hẹn theo ô tìm kiếm (Tên, SĐT, Mã QR)
+ */
 function filterAppointments() {
     const q = document.getElementById('search-apt').value.toLowerCase().trim();
     if (!q) {
@@ -96,7 +122,9 @@ function filterAppointments() {
     renderAppointmentsTable(filtered);
 }
 
-// 3. Hiển thị Giám sát các phòng khám
+/**
+ * 🏥 3. HIỂN THỊ GIÁM SÁT CÁC PHÒNG KHÁM TOÀN VIỆN (CLINICS MONITOR)
+ */
 function renderClinicsMonitor(clinics) {
     const container = document.getElementById('clinics-monitor-list');
     if (!clinics || clinics.length === 0) return;
@@ -118,12 +146,17 @@ function renderClinicsMonitor(clinics) {
     `).join('');
 }
 
-// 4. Xử lý Quét mã QR thủ công hoặc bấm nút mẫu
+/**
+ * Điền nhanh mã QR mẫu vào ô nhập liệu
+ */
 function quickFillToken(token) {
     document.getElementById('input-qr-token').value = token;
     handleManualCheckin(new Event('submit'));
 }
 
+/**
+ * Xử lý nhập mã QR thủ công từ form
+ */
 async function handleManualCheckin(e) {
     if (e && e.preventDefault) e.preventDefault();
     const token = document.getElementById('input-qr-token').value.trim();
@@ -136,12 +169,16 @@ async function handleManualCheckin(e) {
     document.getElementById('input-qr-token').value = '';
 }
 
-// Bấm nút "Check-in" trực tiếp trên bảng lịch hẹn
+/**
+ * Bấm nút Check-in trực tiếp trên hàng của bảng
+ */
 async function handleCheckinFromTable(aptId) {
     await doCheckinApi({ appointmentId: aptId });
 }
 
-// Gọi API Check-in
+/**
+ * ⚡ 4. GỌI API CHECK-IN & ĐẨY VÀO HÀNG ĐỢI (CORE CHECK-IN LOGIC)
+ */
 async function doCheckinApi(payload) {
     try {
         const res = await fetch('/api/reception/checkin', {
@@ -164,7 +201,9 @@ async function doCheckinApi(payload) {
     }
 }
 
-// 5. Xử lý Cấp số cho Khách vãng lai
+/**
+ * 🎫 5. TIẾP NHẬN BỆNH NHÂN VÃNG LAI (CẤP SỐ TẠI QUẦY)
+ */
 async function handleWalkInSubmit(e) {
     e.preventDefault();
     const payload = {
@@ -200,7 +239,9 @@ async function handleWalkInSubmit(e) {
     }
 }
 
-// 6. Hiển thị Popup Phiếu khám (Ticket)
+/**
+ * 🖨️ 6. HIỂN THỊ MODAL PHIẾU KHÁM BỆNH (TICKET MODAL)
+ */
 function showTicketModal(ticket) {
     document.getElementById('ticket-modal-no').textContent = ticket.ticketNumber;
     document.getElementById('ticket-modal-patient').textContent = ticket.patientName;
@@ -217,7 +258,9 @@ function closeTicketModal() {
     document.getElementById('ticket-modal').classList.add('hidden');
 }
 
-// 7. Toast thông báo
+/**
+ * 🔔 7. TOAST HIỂN THỊ THÔNG BÁO GÓC MÀN HÌNH
+ */
 function showToast(message, isError = false) {
     const toast = document.getElementById('toast');
     const msgEl = document.getElementById('toast-message');

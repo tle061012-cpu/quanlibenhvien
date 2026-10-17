@@ -1,21 +1,43 @@
-// State ứng dụng
+/**
+ * =====================================================================================
+ * HỆ THỐNG QUẢN LÝ BỆNH VIỆN VÀ ĐẶT LỊCH KHÁM THÔNG MINH - ĐỒ ÁN CHUYÊN NGÀNH (NHÓM 12)
+ * =====================================================================================
+ * 
+ * 📁 TÊN FILE: public/doctor/app.js
+ * 🎯 MỤC ĐÍCH: Xử lý logic nghiệp vụ, gọi REST API và quản lý giao diện phía Bác sĩ (Doctor Client).
+ * 👥 VAI TRÒ HỖ TRỢ (ROLE): BÁC SĨ (Doctor)
+ * 
+ * 🔄 CÁC HOẠT ĐỘNG CHÍNH (KEY OPERATIONS):
+ *    1. `loadDoctorProfile()`    : Tải hồ sơ bác sĩ, phòng khám trực từ backend MySQL.
+ *    2. `loadDashboardData()`     : Đồng bộ realtime hàng đợi và thống kê ca trực mỗi 5 giây.
+ *    3. `callNextPatient()`       : THUẬT TOÁN ĐIỀU PHỐI SMART QUEUE (Gọi bệnh nhân tiếp theo).
+ *    4. `skipCurrentPatient()`    : Xử lý bỏ lượt khi bệnh nhân vắng mặt.
+ *    5. `submitExamResult()`      : Lưu kết quả chẩn đoán, phác đồ điều trị vào bảng `ketquakham`.
+ *    6. `renderCurrentPatient()`  : Hiển thị triệu chứng, lịch sử khám cũ và tài liệu OCR.
+ *    7. `logoutDoctor()`          : Đăng xuất tài khoản và quay về trang Login.
+ * =====================================================================================
+ */
+
+// Biến lưu trạng thái trên client
 let currentPatient = null;
 let currentTab = 'history';
 
-// Khởi chạy khi tài liệu HTML sẵn sàng
+// Khởi chạy các sự kiện khi DOM đã sẵn sàng
 document.addEventListener('DOMContentLoaded', () => {
     initClock();
     initTabEvents();
     loadDoctorProfile();
     loadDashboardData();
 
-    // Tự động làm mới dữ liệu sau mỗi 5 giây (giả lập real-time)
+    // Tự động làm mới dữ liệu sau mỗi 5 giây (cơ chế Real-time Polling)
     setInterval(() => {
         loadDashboardData(false);
     }, 5000);
 });
 
-// Đồng hồ thời gian thực
+/**
+ * ⏰ Khởi tạo đồng hồ thời gian thực ở góc trên màn hình
+ */
 function initClock() {
     const clockEl = document.getElementById('realtime-clock');
     const updateTime = () => {
@@ -26,7 +48,9 @@ function initClock() {
     setInterval(updateTime, 1000);
 }
 
-// Bắt sự kiện chuyển Tab
+/**
+ * 📑 Bắt sự kiện chuyển Tab giữa "Lịch sử khám cũ" và "Tài liệu đã OCR"
+ */
 function initTabEvents() {
     const btnHistory = document.getElementById('tab-btn-history');
     const btnOcr = document.getElementById('tab-btn-ocr');
@@ -50,7 +74,9 @@ function initTabEvents() {
     });
 }
 
-// 1. Tải thông tin Bác sĩ
+/**
+ * 👨‍⚕️ 1. Tải thông tin Bác sĩ từ API Backend
+ */
 async function loadDoctorProfile() {
     try {
         const res = await fetch('/api/doctor/profile');
@@ -66,7 +92,9 @@ async function loadDoctorProfile() {
     }
 }
 
-// Cập nhật giao diện trạng thái phòng khám
+/**
+ * Cập nhật màu sắc giao diện trạng thái phòng khám
+ */
 function updateStatusUI(status) {
     const btn = document.getElementById('btn-toggle-status');
     const dot = document.getElementById('status-dot');
@@ -83,7 +111,9 @@ function updateStatusUI(status) {
     }
 }
 
-// Bật/tắt trạng thái phòng khám
+/**
+ * Chuyển đổi trạng thái Bác sĩ (Sẵn sàng <-> Tạm nghỉ)
+ */
 async function toggleDoctorStatus() {
     try {
         const res = await fetch('/api/doctor/toggle-status', { method: 'POST' });
@@ -95,10 +125,12 @@ async function toggleDoctorStatus() {
     }
 }
 
-// 2. Tải dữ liệu Dashboard & Hàng đợi
+/**
+ * 📊 2. Tải toàn bộ dữ liệu thống kê Dashboard và danh sách hàng đợi
+ */
 async function loadDashboardData(showLoadingToast = false) {
     try {
-        // Tải Stats
+        // Tải các chỉ số thống kê
         const resStats = await fetch('/api/doctor/dashboard-stats');
         const stats = await resStats.json();
 
@@ -107,7 +139,7 @@ async function loadDashboardData(showLoadingToast = false) {
         document.getElementById('stat-completed').textContent = stats.doneCount;
         document.getElementById('stat-skipped').textContent = stats.skippedCount;
 
-        // Tải Queue
+        // Tải danh sách các ca trong hàng đợi
         const resQueue = await fetch('/api/doctor/queue');
         const queueData = await resQueue.json();
 
@@ -120,7 +152,9 @@ async function loadDashboardData(showLoadingToast = false) {
     }
 }
 
-// 3. Hiển thị Bệnh nhân đang khám
+/**
+ * 🩺 3. Hiển thị thông tin Bệnh nhân đang khám trong phòng
+ */
 function renderCurrentPatient(patient) {
     currentPatient = patient;
     const body = document.getElementById('current-patient-body');
@@ -152,7 +186,7 @@ function renderCurrentPatient(patient) {
     reasonEl.textContent = patient.reason || "Bệnh nhân không ghi chú triệu chứng cụ thể.";
     checkinTimeEl.textContent = `Check-in lúc: ${patient.checkinTime}`;
 
-    // Render Lịch sử khám cũ
+    // Render danh sách Lịch sử khám cũ
     if (patient.history && patient.history.length > 0) {
         historyList.innerHTML = patient.history.map(item => `
             <div class="p-3 rounded-lg bg-slate-50 border border-slate-200 flex justify-between items-center text-xs">
@@ -167,7 +201,7 @@ function renderCurrentPatient(patient) {
         historyList.innerHTML = `<p class="text-xs text-slate-400 italic">Bệnh nhân chưa có lịch sử khám trước đây tại hệ thống.</p>`;
     }
 
-    // Render Tài liệu OCR
+    // Render danh sách Tài liệu OCR cũ
     if (patient.ocrDocs && patient.ocrDocs.length > 0) {
         ocrList.innerHTML = patient.ocrDocs.map(doc => `
             <div class="p-3.5 rounded-xl border border-teal-100 bg-teal-50/50 flex flex-col sm:flex-row gap-3 items-start">
@@ -190,7 +224,10 @@ function renderCurrentPatient(patient) {
     }
 }
 
-// 4. Hiển thị Danh sách chờ khám (Smart Queue)
+/**
+ * ⏳ 4. Hiển thị Danh sách Hàng đợi chờ khám (Smart Queue Waiting List)
+ *       Kèm thuật toán tính toán Thời gian chờ ước tính EWT (~12 phút/ca)
+ */
 function renderWaitingQueue(waitingList) {
     const container = document.getElementById('waiting-queue-container');
     const badgeCount = document.getElementById('badge-queue-count');
@@ -207,7 +244,7 @@ function renderWaitingQueue(waitingList) {
         return;
     }
 
-    const AVG_MINUTES_PER_PATIENT = 12;
+    const AVG_MINUTES_PER_PATIENT = 12; // Baseline thời gian khám trung bình
 
     container.innerHTML = waitingList.map((item, index) => {
         const estimatedWait = index * AVG_MINUTES_PER_PATIENT;
@@ -235,7 +272,9 @@ function renderWaitingQueue(waitingList) {
     }).join('');
 }
 
-// 5. Gọi Bệnh nhân tiếp theo
+/**
+ * 📢 5. THUẬT TOÁN ĐIỀU PHỐI SMART QUEUE - GỌI BỆNH NHÂN TIẾP THEO
+ */
 async function callNextPatient() {
     try {
         const res = await fetch('/api/doctor/call-next', { method: 'POST' });
@@ -253,7 +292,9 @@ async function callNextPatient() {
     }
 }
 
-// 6. Bỏ lượt bệnh nhân hiện tại
+/**
+ * ⏭️ 6. BỎ LƯỢT BỆNH NHÂN KHI GỌI MÀ VẮNG MẶT
+ */
 async function skipCurrentPatient() {
     if (!currentPatient) return;
     if (!confirm(`Bạn có chắc muốn bỏ lượt bệnh nhân ${currentPatient.patientName} (${currentPatient.ticketNumber}) không?`)) {
@@ -276,7 +317,9 @@ async function skipCurrentPatient() {
     }
 }
 
-// 7. Modal Nhập kết quả khám
+/**
+ * 📝 7. XỬ LÝ NHẬP KẾT QUẢ KHÁM BỆNH (CONSULTATION)
+ */
 function openExamModal() {
     if (!currentPatient) {
         showToast("Hiện không có bệnh nhân nào trong phòng để nhập kết quả!", true);
@@ -324,7 +367,9 @@ async function submitExamResult(e) {
     }
 }
 
-// Toast hiển thị thông báo
+/**
+ * 🔔 8. Toast hiển thị thông báo góc màn hình
+ */
 function showToast(message, isError = false) {
     const toast = document.getElementById('toast');
     const msgEl = document.getElementById('toast-message');
@@ -344,8 +389,10 @@ function showToast(message, isError = false) {
     }, 3500);
 }
 
-// Đăng xuất Bác sĩ
+/**
+ * 🚪 9. Đăng xuất tài khoản Bác sĩ -> Về trang Login
+ */
 function logoutDoctor() {
     localStorage.removeItem('hospitalUser');
-    window.location.href = '/login.html';
+    window.location.href = '/login';
 }

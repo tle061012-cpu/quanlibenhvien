@@ -1,3 +1,24 @@
+<!--
+ * =====================================================================================
+ * HỆ THỐNG QUẢN LÝ BỆNH VIỆN VÀ ĐẶT LỊCH KHÁM THÔNG MINH - ĐỒ ÁN CHUYÊN NGÀNH (NHÓM 12)
+ * =====================================================================================
+ * 
+ * 📁 TÊN FILE: public/doctor/index.html
+ * 🎯 MỤC ĐÍCH: Giao diện Trang chủ Bác sĩ (Doctor Dashboard & Smart Queue Consultation Portal).
+ * 👥 VAI TRÒ HỖ TRỢ (ROLE): BÁC SĨ (Doctor)
+ * 
+ * 🔄 LUỒNG HOẠT ĐỘNG CHÍNH (WORKFLOW):
+ *    1. Bác sĩ mở ca trực -> Xem thống kê (Tổng số hẹn, Đang chờ, Đã xong, Bỏ lượt).
+ *    2. Xem thông tin Bệnh nhân đang ở trong phòng khám (STT, Họ tên, Lý do khám).
+ *    3. Xem Lịch sử khám cũ (truy vấn từ `ketquakham`) và Tài liệu OCR cũ (từ `tailieuocr`).
+ *    4. Thao tác điều phối:
+ *       - 📢 "GỌI BỆNH NHÂN TIẾP THEO": Kích hoạt thuật toán Smart Queue -> Bệnh nhân tiếp theo vào phòng.
+ *       - ⏭️ "Bỏ lượt": Khi bệnh nhân vắng mặt quá giờ.
+ *       - 📝 "Nhập kết quả khám": Bật Modal nhập chẩn đoán, phác đồ điều trị, lời dặn -> Lưu MySQL.
+ *    5. Cột bên phải: Danh sách hàng đợi Live kèm Thời gian chờ ước tính EWT (~12 phút/ca).
+ * =====================================================================================
+-->
+
 <!DOCTYPE html>
 <html lang="vi">
 <head>
@@ -16,11 +37,13 @@
 </head>
 <body class="bg-slate-50 text-slate-800 min-h-screen">
 
-    <!-- Top Navigation Bar -->
+    <!-- ======================================================== -->
+    <!-- PHẦN 1: THANH ĐIỀU HƯỚNG TRÊN CÙNG (TOP NAVIGATION BAR) -->
+    <!-- ======================================================== -->
     <header class="bg-white border-b border-slate-200 sticky top-0 z-30 shadow-sm">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div class="flex justify-between h-16 items-center">
-                <!-- Logo & Brand -->
+                <!-- Logo & Tên Khoa Phòng -->
                 <div class="flex items-center space-x-3">
                     <div class="w-10 h-10 rounded-xl bg-teal-600 flex items-center justify-center text-white shadow-md shadow-teal-100">
                         <i class="fa-solid fa-hospital-user text-xl"></i>
@@ -31,31 +54,31 @@
                     </div>
                 </div>
 
-                <!-- Navigation switch between Doctor and Reception -->
+                <!-- Chuyển đổi nhanh giữa các phân hệ -->
                 <div class="hidden sm:flex items-center space-x-2">
-                    <a href="/" class="px-3 py-1.5 rounded-lg text-xs font-bold bg-teal-50 text-teal-800 border border-teal-200 flex items-center">
+                    <a href="/doctor" class="px-3 py-1.5 rounded-lg text-xs font-bold bg-teal-50 text-teal-800 border border-teal-200 flex items-center">
                         <i class="fa-solid fa-stethoscope mr-1.5 text-teal-600"></i> Bác sĩ
                     </a>
-                    <a href="/reception.html" class="px-3 py-1.5 rounded-lg text-xs font-semibold text-slate-600 hover:text-indigo-700 hover:bg-slate-100 transition flex items-center">
-                        <i class="fa-solid fa-id-card mr-1.5 text-indigo-600"></i> Sang Quầy Lễ tân
+                    <a href="/reception" class="px-3 py-1.5 rounded-lg text-xs font-semibold text-slate-600 hover:text-indigo-700 hover:bg-slate-100 transition flex items-center">
+                        <i class="fa-solid fa-id-card mr-1.5 text-indigo-600"></i> Quầy Lễ tân
                     </a>
                 </div>
 
-                <!-- Doctor Info & Status Toggle -->
+                <!-- Thông tin bác sĩ, Trạng thái phòng & Đăng xuất -->
                 <div class="flex items-center space-x-4">
-                    <!-- Status Toggle Button -->
+                    <!-- Nút Bật/Tắt trạng thái phòng khám -->
                     <button id="btn-toggle-status" onclick="toggleDoctorStatus()" class="flex items-center space-x-2 px-3 py-1.5 rounded-full border border-emerald-300 bg-emerald-50 text-emerald-700 text-xs font-semibold hover:bg-emerald-100 transition">
                         <span class="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse" id="status-dot"></span>
                         <span id="status-text">Sẵn sàng khám</span>
                     </button>
 
-                    <!-- Realtime Clock -->
+                    <!-- Đồng hồ thời gian thực -->
                     <div class="hidden sm:flex items-center text-xs text-slate-500 bg-slate-100 px-3 py-1.5 rounded-lg">
                         <i class="fa-regular fa-clock mr-1.5 text-slate-400"></i>
                         <span id="realtime-clock">--:--:--</span>
                     </div>
 
-                    <!-- Doctor Profile -->
+                    <!-- Hồ sơ Bác sĩ & Nút Đăng xuất -->
                     <div class="flex items-center space-x-3 pl-2 border-l border-slate-200">
                         <img id="doctor-avatar" src="https://images.unsplash.com/photo-1622253692010-333f2da6031d?w=100&fit=crop&q=80" alt="Doctor" class="w-9 h-9 rounded-full object-cover ring-2 ring-teal-500">
                         <div class="text-left hidden md:block">
@@ -71,12 +94,13 @@
         </div>
     </header>
 
-    <!-- Main Content Container -->
+    <!-- ======================================================== -->
+    <!-- PHẦN 2: THÂN TRANG & THỐNG KÊ (MAIN DASHBOARD)           -->
+    <!-- ======================================================== -->
     <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 space-y-6">
 
-        <!-- Quick Stats Overview -->
+        <!-- 4 Thẻ chỉ số tổng quan (Top Statistics Cards) -->
         <section class="grid grid-cols-2 md:grid-cols-4 gap-4">
-            <!-- Stat 1: Total Today -->
             <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-sm flex items-center justify-between">
                 <div>
                     <p class="text-xs font-medium text-slate-500 uppercase tracking-wider">Tổng số hẹn</p>
@@ -87,7 +111,6 @@
                 </div>
             </div>
 
-            <!-- Stat 2: Waiting in Queue -->
             <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-sm flex items-center justify-between">
                 <div>
                     <p class="text-xs font-medium text-amber-600 uppercase tracking-wider">Đang chờ khám</p>
@@ -98,7 +121,6 @@
                 </div>
             </div>
 
-            <!-- Stat 3: Completed -->
             <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-sm flex items-center justify-between">
                 <div>
                     <p class="text-xs font-medium text-emerald-600 uppercase tracking-wider">Đã khám xong</p>
@@ -109,7 +131,6 @@
                 </div>
             </div>
 
-            <!-- Stat 4: Skipped -->
             <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-sm flex items-center justify-between">
                 <div>
                     <p class="text-xs font-medium text-rose-500 uppercase tracking-wider">Bỏ lượt / Vắng</p>
@@ -121,13 +142,15 @@
             </div>
         </section>
 
-        <!-- Working Area: Left (Current Patient) & Right (Smart Queue) -->
+        <!-- ======================================================== -->
+        <!-- PHẦN 3: KHU VỰC LÀM VIỆC CHÍNH (WORKING WORKSPACE)        -->
+        <!-- ======================================================== -->
         <section class="grid grid-cols-1 lg:grid-cols-12 gap-6">
 
-            <!-- LEFT COLUMN: CURRENT PATIENT & ACTIONS (8 Cols) -->
+            <!-- CỘT TRÁI (8 Cột): Ca khám hiện tại & Nút gọi số -->
             <div class="lg:col-span-8 space-y-6">
 
-                <!-- Current Active Patient Card -->
+                <!-- Thẻ Thông tin Bệnh nhân đang khám -->
                 <div class="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
                     <div class="bg-gradient-to-r from-teal-700 to-teal-800 px-6 py-4 text-white flex flex-wrap items-center justify-between gap-3">
                         <div class="flex items-center space-x-2">
@@ -143,7 +166,7 @@
                     </div>
 
                     <div class="p-6" id="current-patient-body">
-                        <!-- Patient Basic Info Header -->
+                        <!-- Thông tin cá nhân & Các nút thao tác -->
                         <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center pb-5 border-b border-slate-100 gap-4">
                             <div>
                                 <h2 class="text-2xl font-bold text-slate-800" id="current-patient-name">Chưa có bệnh nhân nào trong phòng</h2>
@@ -159,7 +182,7 @@
                             </div>
                         </div>
 
-                        <!-- Patient Symptoms / Reason for visit -->
+                        <!-- Lý do khám & Triệu chứng -->
                         <div class="mt-5 p-4 rounded-xl bg-slate-50 border border-slate-200">
                             <p class="text-xs font-semibold text-slate-400 uppercase tracking-wider">Lý do đến khám & Triệu chứng ban đầu</p>
                             <p class="text-slate-700 text-sm mt-1.5 leading-relaxed font-medium" id="current-patient-reason">
@@ -167,7 +190,7 @@
                             </p>
                         </div>
 
-                        <!-- Medical Tabs: History & OCR Documents -->
+                        <!-- Tabs: Lịch sử khám cũ & Tài liệu OCR -->
                         <div class="mt-6">
                             <div class="flex border-b border-slate-200 space-x-6">
                                 <button class="pb-3 text-sm font-bold text-teal-700 border-b-2 border-teal-600 flex items-center" id="tab-btn-history">
@@ -178,25 +201,21 @@
                                 </button>
                             </div>
 
-                            <!-- Tab 1: History Content -->
+                            <!-- Nội dung Tab 1: Lịch sử khám -->
                             <div id="tab-content-history" class="pt-4 space-y-3">
-                                <div id="history-list" class="space-y-2">
-                                    <!-- Rendered dynamically -->
-                                </div>
+                                <div id="history-list" class="space-y-2"></div>
                             </div>
 
-                            <!-- Tab 2: OCR Content (Hidden by default) -->
+                            <!-- Nội dung Tab 2: Tài liệu OCR -->
                             <div id="tab-content-ocr" class="pt-4 hidden space-y-3">
-                                <div id="ocr-list" class="space-y-3">
-                                    <!-- Rendered dynamically -->
-                                </div>
+                                <div id="ocr-list" class="space-y-3"></div>
                             </div>
                         </div>
 
                     </div>
                 </div>
 
-                <!-- Call Next CTA Big Banner -->
+                <!-- Banner Kêu gọi Smart Queue: GỌI BỆNH NHÂN TIẾP THEO -->
                 <div class="bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-200 rounded-2xl p-5 flex flex-col sm:flex-row items-center justify-between gap-4">
                     <div class="flex items-center space-x-4">
                         <div class="w-12 h-12 rounded-xl bg-blue-600 text-white flex items-center justify-center text-xl shadow-md shadow-blue-200">
@@ -215,10 +234,9 @@
 
             </div>
 
-            <!-- RIGHT COLUMN: SMART QUEUE WAITING LIST (4 Cols) -->
+            <!-- CỘT PHẢI (4 Cột): Hàng đợi chờ khám (Smart Queue Waiting List) -->
             <div class="lg:col-span-4 space-y-6">
 
-                <!-- Queue List Card -->
                 <div class="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden flex flex-col h-full">
                     <div class="p-4 border-b border-slate-100 flex items-center justify-between bg-slate-50">
                         <div class="flex items-center space-x-2">
@@ -228,12 +246,10 @@
                         <span class="text-xs font-semibold px-2 py-0.5 rounded-full bg-amber-100 text-amber-800" id="badge-queue-count">0 người</span>
                     </div>
 
-                    <!-- Queue Items Container -->
-                    <div class="p-3 divide-y divide-slate-100 overflow-y-auto max-h-[500px]" id="waiting-queue-container">
-                        <!-- Dynamic items will load here -->
-                    </div>
+                    <!-- Danh sách các lượt chờ -->
+                    <div class="p-3 divide-y divide-slate-100 overflow-y-auto max-h-[500px]" id="waiting-queue-container"></div>
 
-                    <!-- Footer of Queue -->
+                    <!-- Chân thẻ Hàng đợi -->
                     <div class="p-3 bg-slate-50 border-t border-slate-100 text-center">
                         <p class="text-xs text-slate-400">
                             <i class="fa-solid fa-bolt mr-1 text-amber-500"></i>
@@ -248,7 +264,9 @@
 
     </main>
 
-    <!-- MODAL: NHẬP KẾT QUẢ KHÁM (CONSULTATION RESULT) -->
+    <!-- ======================================================== -->
+    <!-- PHẦN 4: POPUP MODAL NHẬP KẾT QUẢ KHÁM (CONSULTATION)     -->
+    <!-- ======================================================== -->
     <div id="exam-modal" class="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-50 flex items-center justify-center hidden p-4">
         <div class="bg-white rounded-2xl shadow-xl border border-slate-200 max-w-lg w-full overflow-hidden">
             <div class="bg-teal-700 px-6 py-4 text-white flex justify-between items-center">
@@ -289,13 +307,13 @@
         </div>
     </div>
 
-    <!-- Notification Toast -->
+    <!-- Toast thông báo -->
     <div id="toast" class="fixed bottom-5 right-5 z-50 bg-slate-900 text-white px-5 py-3 rounded-xl shadow-lg transform translate-y-20 opacity-0 transition-all duration-300 flex items-center space-x-3 text-sm">
         <i class="fa-solid fa-circle-info text-teal-400" id="toast-icon"></i>
         <span id="toast-message">Thông báo hệ thống</span>
     </div>
 
-    <!-- Application Script -->
+    <!-- Script xử lý phía Client -->
     <script src="app.js"></script>
 </body>
 </html>

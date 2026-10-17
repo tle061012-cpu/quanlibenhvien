@@ -1,7 +1,21 @@
-<!-- cái lày là trang demo của lễ tân á 
- Sử dung qr ( kiểu 1 qr sẽ có 1 cái mã như tk bank á ) thì nhập mã vào kiểu QR-MED-201
- Thì check in rồi đưa vào queue -->
-
+<!--
+ * =====================================================================================
+ * HỆ THỐNG QUẢN LÝ BỆNH VIỆN VÀ ĐẶT LỊCH KHÁM THÔNG MINH - ĐỒ ÁN CHUYÊN NGÀNH (NHÓM 12)
+ * =====================================================================================
+ * 
+ * 📁 TÊN FILE: public/reception/reception.html
+ * 🎯 MỤC ĐÍCH: Giao diện Quầy Lễ tân & Kiosk Tự phục vụ (Reception & Self-service Kiosk).
+ * 👥 VAI TRÒ HỖ TRỢ (ROLE): LỄ TÂN (Receptionist) / BỆNH NHÂN TỰ CHECK-IN TẠI KIOSK
+ * 
+ * 🔄 LUỒNG HOẠT ĐỘNG CHÍNH (WORKFLOW):
+ *    1. Bệnh nhân có lịch hẹn mang Mã QR trên điện thoại đến viện.
+ *    2. Đưa mã QR vào máy quét -> Hệ thống xác nhận và cập nhật DB sang `DACHECKIN`.
+ *    3. Tự động cấp Số thứ tự mới (STT) -> ĐẨY THẲNG VÀO HÀNG ĐỢI BÁC SĨ (Smart Queue).
+ *    4. Mở Popup Phiếu khám bệnh điện tử có nút In phiếu (Ticket Printing).
+ *    5. Tiếp nhận Bệnh nhân Vãng lai (Khám tại quầy không đặt hẹn trước).
+ *    6. Giám sát thời gian thực (Live) tình trạng hàng đợi các phòng khám trong toàn viện.
+ * =====================================================================================
+-->
 
 <!DOCTYPE html>
 <html lang="vi">
@@ -21,11 +35,13 @@
 </head>
 <body class="bg-slate-50 text-slate-800 min-h-screen">
 
-    <!-- Top Navigation Bar -->
+    <!-- ======================================================== -->
+    <!-- PHẦN 1: THANH ĐIỀU HƯỚNG TRÊN CÙNG (TOP NAVIGATION BAR) -->
+    <!-- ======================================================== -->
     <header class="bg-white border-b border-slate-200 sticky top-0 z-30 shadow-sm">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div class="flex justify-between h-16 items-center">
-                <!-- Logo & Brand -->
+                <!-- Logo & Tên Cổng -->
                 <div class="flex items-center space-x-3">
                     <div class="w-10 h-10 rounded-xl bg-indigo-600 flex items-center justify-center text-white shadow-md shadow-indigo-100">
                         <i class="fa-solid fa-qrcode text-xl"></i>
@@ -36,23 +52,28 @@
                     </div>
                 </div>
 
-                <!-- Navigation switch between Doctor and Reception -->
+                <!-- Điều hướng nhanh giữa các phân hệ -->
                 <div class="flex items-center space-x-3">
-                    <a href="/" class="px-3 py-1.5 rounded-lg text-xs font-semibold text-slate-600 hover:text-teal-700 hover:bg-slate-100 transition flex items-center">
+                    <a href="/doctor" class="px-3 py-1.5 rounded-lg text-xs font-semibold text-slate-600 hover:text-teal-700 hover:bg-slate-100 transition flex items-center">
                         <i class="fa-solid fa-stethoscope mr-1.5 text-teal-600"></i> Sang trang Bác sĩ
                     </a>
-                    <a href="/reception.html" class="px-3.5 py-1.5 rounded-lg text-xs font-bold bg-indigo-50 text-indigo-700 border border-indigo-200 flex items-center">
+                    <a href="/reception" class="px-3.5 py-1.5 rounded-lg text-xs font-bold bg-indigo-50 text-indigo-700 border border-indigo-200 flex items-center">
                         <i class="fa-solid fa-id-card mr-1.5"></i> Quầy Lễ tân
+                    </a>
+                    <a href="/login" class="p-2 rounded-lg text-slate-400 hover:text-rose-600 hover:bg-rose-50 transition text-sm" title="Đăng xuất">
+                        <i class="fa-solid fa-arrow-right-from-bracket"></i>
                     </a>
                 </div>
             </div>
         </div>
     </header>
 
-    <!-- Main Content Container -->
+    <!-- ======================================================== -->
+    <!-- PHẦN 2: THÂN TRANG & CÁC CHỨC NĂNG TIẾP NHẬN BỆNH NHÂN   -->
+    <!-- ======================================================== -->
     <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 space-y-6">
 
-        <!-- Sảnh thống kê tiếp nhận -->
+        <!-- Thống kê nhanh sảnh tiếp nhận hôm nay -->
         <section class="grid grid-cols-1 sm:grid-cols-3 gap-4">
             <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-sm flex items-center justify-between">
                 <div>
@@ -85,13 +106,13 @@
             </div>
         </section>
 
-        <!-- Khối chức năng chính: QR Check-in & Tiếp nhận -->
+        <!-- Khối chức năng: Quét QR & Danh sách tiếp nhận -->
         <section class="grid grid-cols-1 lg:grid-cols-12 gap-6">
 
-            <!-- CỘT TRÁI (8 Cols): Quét QR & Danh sách lịch hẹn -->
+            <!-- CỘT TRÁI (8 Cột): Quét QR & Danh sách lịch hẹn đã đặt -->
             <div class="lg:col-span-8 space-y-6">
 
-                <!-- Card 1: Hộp quét mã QR Check-in -->
+                <!-- KHỐI QUÉT MÃ QR CHECK-IN TỰ ĐỘNG -->
                 <div class="bg-gradient-to-br from-indigo-900 via-indigo-800 to-slate-900 rounded-2xl p-6 text-white shadow-md">
                     <div class="flex items-center space-x-3 mb-4">
                         <div class="w-10 h-10 rounded-xl bg-white/10 flex items-center justify-center text-xl text-indigo-300">
@@ -103,7 +124,7 @@
                         </div>
                     </div>
 
-                    <!-- Input nhập mã QR hoặc test nhanh -->
+                    <!-- Ô nhập mã QR hoặc test nhanh -->
                     <div class="bg-white/10 p-4 rounded-xl border border-white/20 backdrop-blur-sm space-y-3">
                         <form onsubmit="handleManualCheckin(event)" class="flex flex-col sm:flex-row gap-2">
                             <div class="relative flex-1">
@@ -116,7 +137,7 @@
                             </button>
                         </form>
 
-                        <!-- Quick Test Buttons -->
+                        <!-- Các nút test nhanh mã mẫu -->
                         <div class="pt-2 border-t border-white/10 flex flex-wrap items-center gap-2 text-xs">
                             <span class="text-indigo-200">Thử nhanh mã mẫu:</span>
                             <button onclick="quickFillToken('QR-MED-201')" class="px-2.5 py-1 rounded bg-white/20 hover:bg-white/30 text-white font-mono transition">QR-MED-201</button>
@@ -126,7 +147,7 @@
                     </div>
                 </div>
 
-                <!-- Card 2: Danh sách lịch hẹn đã đặt hôm nay -->
+                <!-- BẢNG DANH SÁCH LỊCH HẸN HÔM NAY -->
                 <div class="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
                     <div class="p-5 border-b border-slate-100 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
                         <div>
@@ -152,7 +173,7 @@
                                 </tr>
                             </thead>
                             <tbody id="appointment-table-body" class="divide-y divide-slate-100 text-slate-700">
-                                <!-- Rendered dynamically -->
+                                <!-- Dữ liệu được render tự động qua reception.js -->
                             </tbody>
                         </table>
                     </div>
@@ -160,10 +181,10 @@
 
             </div>
 
-            <!-- CỘT PHẢI (4 Cols): Khách vãng lai & Giám sát phòng khám -->
+            <!-- CỘT PHẢI (4 Cột): Khách vãng lai & Giám sát các phòng khám -->
             <div class="lg:col-span-4 space-y-6">
 
-                <!-- Form tiếp nhận khách vãng lai (không đặt trước) -->
+                <!-- FORM TIẾP NHẬN KHÁCH VÃNG LAI (KHÔNG ĐẶT TRƯỚC) -->
                 <div class="bg-white rounded-2xl border border-slate-200 shadow-sm p-5 space-y-4">
                     <div class="flex items-center space-x-2.5 pb-3 border-b border-slate-100">
                         <div class="w-8 h-8 rounded-lg bg-teal-50 text-teal-600 flex items-center justify-center text-sm font-bold">
@@ -213,7 +234,7 @@
                     </form>
                 </div>
 
-                <!-- Giám sát Hàng đợi các phòng khám (Clinics Queue Monitor) -->
+                <!-- GIÁM SÁT TRẠNG THÁI CÁC PHÒNG KHÁM (CLINICS QUEUE MONITOR) -->
                 <div class="bg-white rounded-2xl border border-slate-200 shadow-sm p-5 space-y-4">
                     <div class="flex items-center justify-between pb-3 border-b border-slate-100">
                         <div class="flex items-center space-x-2">
@@ -223,9 +244,7 @@
                         <span class="text-[11px] text-slate-400">Live</span>
                     </div>
 
-                    <div id="clinics-monitor-list" class="space-y-3">
-                        <!-- Rendered dynamically -->
-                    </div>
+                    <div id="clinics-monitor-list" class="space-y-3"></div>
                 </div>
 
             </div>
@@ -234,9 +253,11 @@
 
     </main>
 
-    <!-- POPUP MODAL: PHIẾU KHÁM / TICKET ĐIỆN TỬ -->
+    <!-- ======================================================== -->
+    <!-- PHẦN 3: POPUP PHIẾU KHÁM BỆNH ĐIỆN TỬ (TICKET MODAL)     -->
+    <!-- ======================================================== -->
     <div id="ticket-modal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center hidden p-4">
-        <div class="bg-white rounded-3xl shadow-2xl border border-slate-200 max-w-sm w-full overflow-hidden text-center p-6 space-y-4 animate-scale-up">
+        <div class="bg-white rounded-3xl shadow-2xl border border-slate-200 max-w-sm w-full overflow-hidden text-center p-6 space-y-4">
             <div class="w-16 h-16 rounded-full bg-emerald-100 text-emerald-600 flex items-center justify-center text-3xl mx-auto shadow-inner">
                 <i class="fa-solid fa-check"></i>
             </div>
@@ -279,7 +300,7 @@
         </div>
     </div>
 
-    <!-- Notification Toast -->
+    <!-- Toast thông báo -->
     <div id="toast" class="fixed bottom-5 right-5 z-50 bg-slate-900 text-white px-5 py-3 rounded-xl shadow-lg transform translate-y-20 opacity-0 transition-all duration-300 flex items-center space-x-3 text-sm">
         <i class="fa-solid fa-circle-check text-emerald-400" id="toast-icon"></i>
         <span id="toast-message">Thông báo</span>
